@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Математика с репетитором</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, Arial, sans-serif; background: #eef3f9; color: #222; padding-bottom: 40px; }
+  header { background: #2c5f9e; color: white; padding: 18px; text-align: center; position: sticky; top:0; z-index:10; }
+  header h1 { font-size: 22px; }
+  .container { max-width: 900px; margin: 0 auto; padding: 16px; }
+  .card { background: white; border-radius: 12px; padding: 20px; margin: 16px 0; box-shadow: 0 2px 10px rgba(0,0,0,.08); }
+  input, textarea, select, button { font-size: 15px; padding: 10px; margin: 6px 0; border-radius: 8px; border: 1px solid #ccd6e0; width: 100%; font-family: inherit; }
+  textarea { resize: vertical; }
+  button { background: #2c5f9e; color: white; border: none; cursor: pointer; font-weight: 600; }
+  button:hover { background: #1d4b80; }
+  button.danger { background: #c0392b; }
+  button.danger:hover { background: #96291e; }
+  button.success { background: #27ae60; }
+  button.success:hover { background: #1e8449; }
+  button.small { width: auto; padding: 6px 12px; font-size: 13px; margin-right: 6px; }
+  .tabs { display: flex; gap: 8px; margin: 12px 0; }
+  .tabs button { background: #dbe5f0; color: #333; }
+  .tabs button.active { background: #2c5f9e; color: white; }
+  .item { border-left: 4px solid #2c5f9e; padding: 12px 16px; margin: 12px 0; background: #f7fafd; border-radius: 6px; }
+  .item.done { border-left-color: #27ae60; background: #eefaf3; }
+  .item h3 { color: #2c5f9e; margin-bottom: 4px; }
+  .item .date { font-size: 12px; color: #888; margin-bottom: 8px; }
+  .item .text { white-space: pre-wrap; line-height: 1.5; }
+  .badge { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 10px; background: #2c5f9e; color: white; margin-left: 6px; vertical-align: middle; }
+  .badge.green { background: #27ae60; }
+  .row { display: flex; gap: 10px; }
+  .row > * { flex: 1; }
+  .error { color: #c0392b; font-size: 14px; margin-top: 6px; }
+  .hidden { display: none !important; }
+  .notif { position: fixed; top: 70px; right: 20px; background: #27ae60; color: white; padding: 12px 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,.2); z-index: 100; animation: slideIn .3s ease; }
+  @keyframes slideIn { from { transform: translateX(400px); } to { transform: translateX(0); } }
+  .pdf-link { display: inline-block; margin-top: 8px; padding: 8px 14px; background: #dbe5f0; color: #2c5f9e; text-decoration: none; border-radius: 6px; font-size: 14px; font-weight: 600; }
+  .pdf-link:hover { background: #c4d4e5; }
+  .task-number { display: inline-block; background: #2c5f9e; color: white; border-radius: 50%; width: 32px; height: 32px; line-height: 32px; text-align: center; font-weight: bold; margin-right: 8px; vertical-align: middle; }
+</style>
+</head>
+<body>
+<header>
+  <h1>📐 Математика с репетитором</h1>
+</header>
+
+<div class="container">
+  <!-- ЭКРАН ВХОДА -->
+  <div id="loginScreen" class="card">
+    <h2>Вход</h2>
+    <p style="margin:10px 0;color:#666;font-size:14px;">
+      Репетитор: <b>teacher</b> / <b>1234</b><br>
+      Ученики: <b>ivan</b>, <b>anna</b> / <b>1234</b>
+    </p>
+    <input id="loginUser" placeholder="Логин">
+    <input id="loginPass" type="password" placeholder="Пароль">
+    <button onclick="login()">Войти</button>
+    <p id="loginError" class="error"></p>
+  </div>
+
+  <!-- КАБИНЕТ -->
+  <div id="app" class="hidden">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+        <h2 id="welcome"></h2>
+        <button onclick="logout()" class="small">Выйти</button>
+      </div>
+    </div>
+
+    <!-- ================= РЕПЕТИТОР ================= -->
+    <div id="teacherPanel" class="hidden">
+      <!-- Добавить материал -->
+      <div class="card">
+        <h3>➕ Добавить материал</h3>
+        <select id="targetStudent">
+          <option value="all">Всем ученикам</option>
+        </select>
+        <div class="row">
+          <select id="postType">
+            <option value="conspect">📘 Конспект</option>
+            <option value="homework">📝 Домашнее задание</option>
+          </select>
+          <select id="taskNumberWrap" class="hidden" style="display:none" id="taskNumberWrap">
+            <option value="1">Задание №1</option>
+            <option value="2">Задание №2</option>
+            <option value="3">Задание №3</option>
+            <option value="4">Задание №4</option>
+            <option value="5">Задание №5</option>
+          </select>
+        </div>
+        <input id="postTitle" placeholder="Заголовок (например: Квадратные уравнения)">
+        <textarea id="postText" rows="4" placeholder="Текст, условие задачи или пояснение..."></textarea>
+        <label style="font-size:13px;color:#666;margin-top:8px;display:block;">📎 Прикрепить PDF (необязательно):</label>
+        <input type="file" id="postPdf" accept="application/pdf">
+        <button onclick="addPost()">📤 Опубликовать</button>
+      </div>
+
+      <!-- Добавить ученика -->
+      <div class="card">
+        <h3>👤 Добавить ученика</h3>
+        <div class="row">
+          <input id="newName" placeholder="Имя (Иван)">
+          <input id="newLogin" placeholder="Логин (ivan)">
+          <input id="newPass" placeholder="Пароль">
+        </div>
+        <button onclick="addStudent()">Создать ученика</button>
+        <p id="studentError" class="error"></p>
+        <div id="studentsList" style="margin-top:12px;"></div>
+      </div>
+
+      <!-- Все публикации -->
+      <div class="card" id="teacherPostsContainer"></div>
+    </div>
+
+    <!-- ================= УЧЕНИК ================= -->
+    <div id="studentPanel" class="hidden">
+      <div class="card" id="notifBox" style="display:none;background:#fff8e1;border-left:4px solid #f39c12;">
+        🔔 <span id="notifText"></span>
+      </div>
+
+      <div class="tabs">
+        <button id="tabConspects" class="active" onclick="switchTab('conspect')">📘 Конспекты</button>
+        <button id="tabHomework" onclick="switchTab('homework')">📝 ДЗ</button>
+      </div>
+      <div class="card" id="postsList"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ======================= ДАННЫЕ =======================
+let users = JSON.parse(localStorage.getItem('users') || 'null') || {
+  teacher: { pass: '1234', role: 'teacher', name: 'Репетитор' },
+  ivan:    { pass: '1234', role: 'student', name: 'Иван' },
+  anna:    { pass: '1234', role: 'student', name: 'Анна' }
+};
+let posts = JSON.parse(localStorage.getItem('posts') || '[]');
+let completions = JSON.parse(localStorage.getItem('completions') || '{}');
+// completions = { "ivan": [1, 5, 7], "anna": [2] }  -- id выполненных ДЗ
+let currentUser = null;
+let currentTab = 'conspect';
+
+function save() {
+  localStorage.setItem('users', JSON.stringify(users));
+  localStorage.setItem('posts', JSON.stringify(posts));
+  localStorage.setItem('completions', JSON.stringify(completions));
+}
+
+// ======================= УВЕДОМЛЕНИЯ (тосты) =======================
+function toast(msg, color = '#27ae60') {
+  const t = document.createElement('div');
+  t.className = 'notif';
+  t.style.background = color;
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+
+// ======================= ВХОД =======================
+function login() {
+  const u = document.getElementById('loginUser').value.trim();
+  const p = document.getElementById('loginPass').value;
+  const user = users[u];
+  if (!user || user.pass !== p) {
+    document.getElementById('loginError').textContent = 'Неверный логин или пароль';
+    return;
+  }
+  currentUser = { login: u, ...user };
+  localStorage.setItem('currentUser', JSON.stringify(currentUser));
+  showApp();
+}
+
+function logout() {
+  currentUser = null;
+  localStorage.removeItem('currentUser');
+  location.reload();
+}
+
+window.onload = () => {
+  const saved = localStorage.getItem('currentUser');
+  if (saved) { currentUser = JSON.parse(saved); showApp(); }
+};
+
+// ======================= ОТРИСОВКА =======================
+function showApp() {
+  document.getElementById('loginScreen').classList.add('hidden');
+  document.getElementById('app').classList.remove('hidden');
+  document.getElementById('welcome').textContent = 'Привет, ' + currentUser.name + '!';
+
+  // список учеников для селекта «кому»
+  const sel = document.getElementById('targetStudent');
+  sel.innerHTML = '<option value="all">Всем ученикам</option>';
+  Object.entries(users).filter(([k,v]) => v.role === 'student').forEach(([login, u]) => {
+    const o = document.createElement('option');
+    o.value = login; o.textContent = u.name;
+    sel.appendChild(o);
+  });
+
+  if (currentUser.role === 'teacher') {
+    document.getElementById('teacherPanel').classList.remove('hidden');
+    renderTeacherPosts();
+    renderStudentsList();
+  } else {
+    document.getElementById('studentPanel').classList.remove('hidden');
+    showStudentNotification();
+    switchTab('conspect');
+  }
+
+  // переключение селекта «номер задания»
+  const postType = document.getElementById('postType');
+  const taskNum = document.getElementById('taskNumberWrap');
+  postType.onchange = () => {
+    taskNum.style.display = postType.value === 'homework' ? 'block' : 'none';
+  };
+}
+
+// ======================= РЕПЕТИТОР: ученики =======================
+function addStudent() {
+  const name = document.getElementById('newName').value.trim();
+  const login = document.getElementById('newLogin').value.trim().toLowerCase();
+  const pass = document.getElementById('newPass').value.trim();
+  const err = document.getElementById('studentError');
+
+  if (!name || !login || !pass) { err.textContent = 'Заполните все поля'; return; }
+  if (users[login]) { err.textContent = 'Такой логин уже существует'; return; }
+
+  users[login] = { pass, role: 'student', name };
+  save();
+  err.textContent = '';
+  document.getElementById('newName').value = '';
+  document.getElementById('newLogin').value = '';
+  document.getElementById('newPass').value = '';
+  toast('Ученик ' + name + ' создан');
+  showApp();
+}
+
+function renderStudentsList() {
+  const box = document.getElementById('studentsList');
+  const students = Object.entries(users).filter(([k,v]) => v.role === 'student');
+  if (!students.length) { box.innerHTML = '<p style="color:#888">Учеников пока нет</p>'; return; }
+  box.innerHTML = '<h4 style="margin-bottom:8px;color:#555">Список учеников:</h4>' +
+    students.map(([login, u]) => {
+      const done = (completions[login] || []).length;
+      return `<div style="padding:8px 0;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center;">
+        <div><b>${u.name}</b> <span style="color:#888;font-size:13px">(${login})</span></div>
+        <div style="font-size:13px;color:#27ae60">✅ выполнено: ${done}</div>
+      </div>`;
+    }).join('');
+}
+
+// ======================= РЕПЕТИТОР: публикации =======================
+function addPost() {
+  const title = document.getElementById('postTitle').value.trim();
+  const text = document.getElementById('postText').value.trim();
+  const type = document.getElementById('postType').value;
+  const target = document.getElementById('targetStudent').value;
+  const taskNumber = document.getElementById('taskNumberWrap').value;
+  const pdfFile = document.getElementById('postPdf').files[0];
+
+  if (!title && !text && !pdfFile) { toast('Заполните заголовок, текст или PDF', '#c0392b'); return; }
+
+  const finish = (pdfData, pdfName) => {
+    posts.push({
+      id: Date.now(),
+      title: title || 'Без названия',
+      text,
+      type, target,
+      taskNumber: type === 'homework' ? taskNumber : null,
+      pdfData: pdfData || null,
+      pdfName: pdfName || null,
+      date: new Date().toLocaleString('ru-RU')
+    });
+    save();
+    document.getElementById('postTitle').value = '';
+    document.getElementById('postText').value = '';
+    document.getElementById('postPdf').value = '';
+    renderTeacherPosts();
+    toast('Опубликовано ✅');
+  };
+
+  if (pdfFile) {
+    if (pdfFile.size > 2 * 1024 * 1024) {
+      toast('PDF больше 2 МБ — localStorage не выдержит', '#c0392b');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = e => finish(e.target.result, pdfFile.name);
+    reader.readAsDataURL(pdfFile);
+  } else {
+    finish(null, null);
+  }
+}
+
+function renderTeacherPosts() {
+  const box = document.getElementById('teacherPostsContainer');
+  if (!posts.length) { box.innerHTML = '<h3>📋 Все публикации</h3><p style="color:#888">Пока пусто</p>'; return; }
+
+  let html = '<h3>📋 Все публикации</h3>';
+  posts.slice().reverse().forEach(p => {
+    const who = p.target === 'all' ? 'всем' : (users[p.target]?.name || p.target);
+    const icon = p.type === 'conspect' ? '📘' : '📝';
+    let completionsInfo = '';
+    if (p.type === 'homework') {
+      const doneBy = Object.entries(completions)
+        .filter(([login, ids]) => ids.includes(p.id))
+        .map(([login]) => users[login]?.name || login);
+      completionsInfo = doneBy.length
+        ? `<div style="margin-top:8px;font-size:13px;color:#27ae60">✅ Выполнили: ${doneBy.join(', ')}</div>`
+        : `<div style="margin-top:8px;font-size:13px;color:#999">Никто ещё не выполнил</div>`;
+    }
+
+    html += `<div class="item">
+      <h3>${icon} ${p.title}${p.taskNumber ? `<span class="badge">Задание №${p.taskNumber}</span>` : ''}</h3>
+      <div class="date">${p.date} · кому: ${who}</div>
+      <div class="text">${escapeHtml(p.text)}</div>
+      ${p.pdfData ? `<a class="pdf-link" href="${p.pdfData}" download="${p.pdfName}">📎 ${p.pdfName}</a>` : ''}
+      ${completionsInfo}
+      <div style="margin-top:10px;">
+        <button class="danger small" onclick="deletePost(${p.id})">Удалить</button>
+      </div>
+    </div>`;
+  });
+  box.innerHTML = html;
+}
+
+function deletePost(id) {
+  if (!confirm('Удалить публикацию?')) return;
+  posts = posts.filter(p => p.id !== id);
+  Object.keys(completions).forEach(k => { completions[k] = completions[k].filter(x => x !== id); });
+  save();
+  renderTeacherPosts();
+  toast('Удалено', '#c0392b');
+}
+
+// ======================= УЧЕНИК =======================
+function switchTab(tab) {
+  currentTab = tab;
+  document.getElementById('tabConspects').classList.toggle('active', tab === 'conspect');
+  document.getElementById('tabHomework').classList.toggle('active', tab === 'homework');
+  renderStudentPosts();
+}
+
+function renderStudentPosts() {
+  const myDone = completions[currentUser.login] || [];
+  const list = posts.filter(p =>
+    p.type === currentTab &&
+    (p.target === 'all' || p.target === currentUser.login)
+  ).reverse();
+
+  const box = document.getElementById('postsList');
+  if (!list.length) { box.innerHTML = '<p style="color:#888">Пока ничего нет 🎉</p>'; return; }
+
+  box.innerHTML = list.map(p => {
+    const isDone = myDone.includes(p.id);
+    const isHw = p.type === 'homework';
+    return `<div class="item ${isDone ? 'done' : ''}">
+      <h3>${isHw ? '📝' : '📘'} ${p.title}${p.taskNumber ? `<span class="badge">Задание №${p.taskNumber}</span>` : ''}</h3>
+      <div class="date">${p.date}</div>
+      <div class="text">${escapeHtml(p.text)}</div>
+      ${p.pdfData ? `<a class="pdf-link" href="${p.pdfData}" download="${p.pdfName}">📎 Скачать PDF</a>` : ''}
+      ${isHw ? `
+        <div style="margin-top:10px;">
+          ${isDone
+            ? `<button class="small" style="background:#95a5a6" onclick="toggleDone(${p.id})">↩️ Отменить выполнение</button>
+               <span style="color:#27ae60;font-weight:bold;margin-left:10px">✅ Выполнено</span>`
+            : `<button class="success small" onclick="toggleDone(${p.id})">✅ Отметить выполненным</button>`}
+        </div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function toggleDone(postId) {
+  const login = currentUser.login;
+  if (!completions[login]) completions[login] = [];
+  const idx = completions[login].indexOf(postId);
+  if (idx >= 0) completions[login].splice(idx, 1);
+  else completions[login].push(postId);
+  save();
+  renderStudentPosts();
+  toast(idx >= 0 ? 'Отменено' : 'Молодец! ✅');
+}
+
+function showStudentNotification() {
+  const login = currentUser.login;
+  const myDone = completions[login] || [];
+  const newHw = posts.filter(p =>
+    p.type === 'homework' &&
+    (p.target === 'all' || p.target === login) &&
+    !myDone.includes(p.id)
+  );
+  const box = document.getElementById('notifBox');
+  if (newHw.length) {
+    document.getElementById('notifText').textContent =
+      `У вас ${newHw.length} невыполненных ДЗ! Откройте вкладку «ДЗ»`;
+    box.style.display = 'block';
+  } else {
+    box.style.display = 'none';
+  }
+}
+
+// ======================= ВСПОМОГАТЕЛЬНОЕ =======================
+function escapeHtml(s) {
+  return String(s || '').replace(/[&<>"']/g, c =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+</script>
+</body>
+</html>
